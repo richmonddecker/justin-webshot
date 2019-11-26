@@ -16,11 +16,16 @@ def setupDriver():
     driver = webdriver.Chrome(driver_path)
     return driver
 
-def saveScreenshot(driver, url, out):
-    driver.get(url)
+def loadUrl(driver, url):
     print(f"Fetching url {url} ...")
-    driver.save_screenshot(out)
-    print(f"Saved screenshot at {out}")
+    driver.get(url)
+
+def saveScreenshot(driver, out, id=""):
+    output = out + str(id)
+    driver.save_screenshot(output)
+    print(f"Saved screenshot at {output}")
+
+def closeDriver(driver):
     driver.close()
     print("Closed driver")
 
@@ -44,6 +49,21 @@ def writeToBucket(file_name, bucket_name):
     except Exception as e:
         print(e)
 
+def analyzePage(driver):
+    total_height = driver.execute_script("return document.body.scrollHeight;")
+    window_size = driver.get_window_size()
+    inner_height = driver.execute_script("return window.innerHeight")
+    height_diff = window_size.height - inner_height
+
+    full_pages = total_height // inner_height
+    leftover = total_height - full_pages * inner_height
+
+    ### TODO::: THIS PART!!!!
+    for i in range(full_pages):
+        driver.execute_script("return document.body.scrollHeight")
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    return 
+
 
 def setupArgs():
     parser = argparse.ArgumentParser(description="Screenshot a url's webpage.")
@@ -62,7 +82,9 @@ if __name__ == "__main__":
     args = setupArgs()
     driver = setupDriver()
 
-    saveScreenshot(driver, args.url, args.out)
+    loadUrl(driver, args.url)
+    saveScreenshot(driver, args.out)
+    closeDriver(driver)
     if args.bucket:
         writeToBucket(args.out, args.bucket)
 
