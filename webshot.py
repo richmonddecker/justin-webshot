@@ -87,6 +87,11 @@ def analyzePage(driver):
     return full_pages, inner_height, window_size["width"], last_height
 
 def combineImage(dir_name, out, count):
+    """
+    Combine a set of png images vertically into one image.
+    Looks through the given directory for numbered files up to
+    the given count. e.g. dir_name/out0.png, dir_name/out1.png...
+    """
     try:
         # Read all images into a list
         images = [cv2.imread(f"{dir_name}/{out}{i}.png") for i in range(count)]
@@ -99,6 +104,12 @@ def combineImage(dir_name, out, count):
 
 
 def scanPage(driver, out, full_pages, page_height, page_width, last_height):
+    """
+    Scan the whole page (using the driver) and create a single output image
+    to save at out.png
+    We must pass specific information about the page size and view size so
+    that the function knows how exactly to scan and produce screenshots.
+    """
     dir_name = "pieces"
     try:
         os.mkdir(dir_name)
