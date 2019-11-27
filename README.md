@@ -1,5 +1,5 @@
 # justin-webshot
-A simple python CLI for screenshotting a 
+A simple python CLI for screenshotting a webpage
 
 ** For instructions on installing and using this script, see bottom of file
 
