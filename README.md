@@ -1,7 +1,7 @@
 # justin-webshot
 A simple python CLI for screenshotting a webpage
 
-** For instructions on installing and using this script, see bottom of file
+** For instructions on installing and using this script, see bottom of file **
 
 This is a command line interface to fulfill three main goals.
 1. Given a URL, save a screenshot of the web page at that URL.
@@ -9,9 +9,9 @@ This is a command line interface to fulfill three main goals.
 3. If selected, save the WHOLE web page instead of just the top rendered screen.
 
 To accomplish 1, I use selenium webdriver, and a package called webdriverdownloader.
-The webdriverdownloader will automatically download a Chrome webdriver each time.
-Although this repeated functionality is not ideal, it ensures that there is always a functioning
-driver installed on the system and that it knows where this driver is located.
+The webdriverdownloader will check if the driver exists at the expected filepath.
+If not, it will automatically download a Chrome webdriver to this filepath in ~/bin/chromedriver
+This prevents the driver from having to be downloaded on each repeated call of the code.
 Then, this driver is used to render the webpage, and to save the screenshot.
 
 To accomplish 2, we use the boto3 library to create a Session. This Session will check the user's
@@ -41,7 +41,7 @@ optional arguments:
                         The name of the s3 bucket to upload to
   -f, --full            Whether to capture the whole webpage
 
-** Areas for Improvement
+** Areas for Improvement **
 
 The error handling in this code can definitely be improved. With all these external libraries and web IO, there are
 many many types of errors/exceptions that can occur. I handled some explicitly, but some I sort of ignored and some I
@@ -49,9 +49,7 @@ just caught with a basic "catch Exception as e". In general, this is not great b
 be handled explicitly based on type. In this case, a programming challenge, it's not worth figuring out and doing all,
 so I'll just mention it here.
 
-In certain situations of bad internet connections, the code can get stuck for
-a very long time, trying to download from/upload to the internet. It would be
-ideal to program in a timeout feature, so that the code stops trying after maybe 20 seconds (instead of failing after 1 minute).
+In certain situations of bad internet connections, the code can get stuck for a very long time, trying to download from/upload to the internet. It would be ideal to program in a timeout feature, so that the code stops trying after maybe 20 seconds (instead of failing after 1 minute).
 
 Also, I grouped all this module's functionality into functions, which much be passed in a driver each time. It could be
 useful to group this functionality within a class, and store things like the driver and the file names as class attributes.
@@ -59,7 +57,7 @@ This way, all member functions would have access to this information, and the sy
 moves along. However, this method also has its own drawbacks, such as being less flexible for outside use or individual
 calling of functions.
 
-** Instructions for Setup and Usage
+** Instructions for Setup and Usage **
 1. Clone the repo: git clone https://github.com/richmonddecker/justin-webshot
 2. Enter the directory: cd justin-webshot
 3. Create virtual environment: python -m venv ws-env
