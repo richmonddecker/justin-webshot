@@ -5,28 +5,37 @@ import argparse
 from collections import namedtuple
 import os
 import shutil
-import sys
 
 import boto3
 import botocore
 import cv2
-import webdriverdownloader
 from selenium import webdriver
+import webdriverdownloader
 
-def setupDriver():
-    """Download and setup a Chrome driver, returning this driver."""
+def installDriver():
+    """Download a chromedriver (if necessary), returning its filepath."""
+    # Check if we already have this driver installed...
     try:
-        cdd = webdriverdownloader.ChromeDriverDownloader()
-        print("Installing driver...")
-        cdd.download_and_install()
-        driver_path = cdd.link_path + os.sep + cdd.get_driver_filename()
-        print(f"Driver installed at {driver_path}")
-        print("Running driver...")
-        driver = webdriver.Chrome(driver_path)
-        return driver
+        likely_path = os.path.expanduser("~") + os.sep + "bin/chromedriver"
+        if os.path.exists(likely_path):
+            print(f"Driver already installed at {likely_path}")
+            driver_path = likely_path
+        else:
+            cdd = webdriverdownloader.ChromeDriverDownloader()
+            print("Installing driver...")
+            cdd.download_and_install()
+            driver_path = cdd.link_path + os.sep + cdd.get_driver_filename()
+            print(f"Driver installed at {driver_path}")
+        return driver_path
     except Exception as e:
         print(e)
         raise RuntimeError("Couldn't set up webdriver. Are you online?")
+
+def runDriver(driver_path):
+    """Start up the chromedriver at the given filepath."""
+    print("Running driver...")    
+    driver = webdriver.Chrome(driver_path)
+    return driver
 
 def loadUrl(driver, url):
     """Load the url using the given driver."""
@@ -107,6 +116,7 @@ def combineImage(dir_name, out, count):
         images = [cv2.imread(f"{dir_name}/{out}{i}.png") for i in range(count)]
         stitched = cv2.vconcat(images)
         cv2.imwrite(f"{out}.png", stitched)
+        print(f"Saved combined image at {out}.png")
         return 
     except Exception as e:
         # Yes yes, terrible exception handling, gimme a break. :)
@@ -126,17 +136,17 @@ def scanFullPage(driver, out):
         os.mkdir(dir_name)
     except FileExistsError:
         pass
-    for i in range(1, analysis.count + 1):
+    for i in range(analysis.count):
         saveScreenshot(driver, out, dir_name, i)
-        scrollY = i * analysis.height
+        scrollY = (i + 1) * analysis.height
         driver.execute_script(f"window.scrollTo(0, {scrollY});")
 
     if analysis.extra:
         driver.set_window_size(analysis.width, analysis.extra)
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        saveScreenshot(driver, out, dir_name, i)
+        saveScreenshot(driver, out, dir_name, i + 1)
 
-    combineImage(dir_name, out, i)
+    combineImage(dir_name, out, i + 1)
 
     try:
         # Clean up that working directory
@@ -165,7 +175,9 @@ def setupArgs():
 
 if __name__ == "__main__":
     args = setupArgs()
-    driver = setupDriver()
+
+    driver_path = installDriver()
+    driver = runDriver(driver_path)
 
     loadUrl(driver, args.url)
 
