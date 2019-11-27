@@ -16,7 +16,12 @@ To accomplish 2, we use the boto3 library to create a Session. This Session will
 AWS credentials file (default at ~/.aws/credentials) to see if a user-id and secret-key are defined.
 If so, it will be able to use these credentials to upload the image to the given bucket.
 
-To accomplish 3, we...
+To accomplish 3, we use the webdriver to scan through the whole webpage and take a screenshot at each section.
+We can get the total height of the webpage, and also the browser view height (window.innerHeight). With this, we
+can determine the number of full screenshots to take, scrolling down a full window height each time. Then, there will
+almost always be a last smaller section to capture at the end. To get just the right size here, we shrink the window
+height and take the last screenshot. All these screenshots are stored in a temporary working directory. At the end of the
+process, we simply use opencv to vertically stitch these screenshots together into the one final output file.
 
 We use argparse to parse the command line arguments, which takes the following format:
 
@@ -33,3 +38,17 @@ optional arguments:
   -b BUCKET, --bucket BUCKET
                         The name of the s3 bucket to upload to
   -f, --full            Whether to capture the whole webpage
+
+Areas for Improvement
+
+The error handling in this code can definitely be improved. With all these external libraries and web IO, there are
+many many types of errors/exceptions that can occur. I handled some explicitly, but some I sort of ignored and some I
+just caught with a basic "catch Exception as e". In general, this is not great because errors/exceptions should usually
+be handled explicitly based on type. In this case, a programming challenge, it's not worth figuring out and doing all,
+so I'll just mention it here.
+
+Also, I grouped all this module's functionality into functions, which much be passed in a driver each time. It could be
+useful to group this functionality within a class, and store things like the driver and the file names as class attributes.
+This way, all member functions would have access to this information, and the system would sort of track its state as it
+moves along. However, this method also has its own drawbacks, such as being less flexible for outside use or individual
+calling of functions.
