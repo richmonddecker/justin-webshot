@@ -1,4 +1,8 @@
+# webshot.py
+# Justin Richmond-Decker
+
 import argparse
+from collections import namedtuple
 import os
 import shutil
 import sys
@@ -77,14 +81,20 @@ def analyzePage(driver):
     total_height = driver.execute_script("return document.body.scrollHeight;")
     window_size = driver.get_window_size()
     inner_height = driver.execute_script("return window.innerHeight")
+
+    # The difference between the browser height and actual window height.
     height_diff = window_size["height"] - inner_height
     
+    # How many full page views fit in the whole web page
     full_pages = total_height // inner_height
+    # How many vertical pixels are left over (remainder)
     leftover = total_height - full_pages * inner_height
+    # What height do we need to set the window to for the last screenshot
     last_height = leftover + height_diff if leftover else 0
 
-    # Probably better to return a namedtuple or something similar
-    return full_pages, inner_height, window_size["width"], last_height
+    return namedtuple("PageAnalysis", ("width", "height", "count", "extra"))(
+        window_size["width"], inner_height, full_pages, last_height
+    )
 
 def combineImage(dir_name, out, count):
     """
@@ -103,29 +113,30 @@ def combineImage(dir_name, out, count):
         print(e)
 
 
-def scanPage(driver, out, full_pages, page_height, page_width, last_height):
+def scanFullPage(driver, out):
     """
     Scan the whole page (using the driver) and create a single output image
     to save at out.png
     We must pass specific information about the page size and view size so
     that the function knows how exactly to scan and produce screenshots.
     """
+    analysis = analyzePage(driver)
     dir_name = "pieces"
     try:
         os.mkdir(dir_name)
     except FileExistsError:
         pass
-    for i in range(full_pages):
+    for i in range(1, analysis.count + 1):
         saveScreenshot(driver, out, dir_name, i)
-        scrollY = (i + 1) * page_height
+        scrollY = i * analysis.height
         driver.execute_script(f"window.scrollTo(0, {scrollY});")
 
-    if last_height:
-        driver.set_window_size(page_width, last_height)
+    if analysis.extra:
+        driver.set_window_size(analysis.width, analysis.extra)
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        saveScreenshot(driver, out, dir_name, i + 1)
+        saveScreenshot(driver, out, dir_name, i)
 
-    combineImage(dir_name, out, i + 1)
+    combineImage(dir_name, out, i)
 
     try:
         # Clean up that working directory
@@ -157,12 +168,12 @@ if __name__ == "__main__":
     driver = setupDriver()
 
     loadUrl(driver, args.url)
-    if args.full:
-        scanPage(driver, args.out, *analyzePage(driver))
-    else:
-        saveScreenshot(driver, args.out)
+
+    # Decide which function to use to capture the webpage, and call it
+    captureFunction = scanFullPage if args.full else saveScreenshot
+    captureFunction(driver, args.out)
+    
     closeDriver(driver)
+    
     if args.bucket:
         writeToBucket(f"{args.out}.png", args.bucket)
-
-
